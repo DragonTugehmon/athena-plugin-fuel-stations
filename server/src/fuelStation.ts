@@ -2,13 +2,12 @@ import * as alt from 'alt-server';
 import * as Athena from '@AthenaServer/api';
 import { VIEW_EVENTS_FUEL_TRIGGER } from '../../shared/events';
 import { LOCALE_FUEL_STATIONS } from '../../shared/locales';
-import { Vehicle_Behavior } from '../../shared/vehicle';
 import { CurrencyTypes } from '@AthenaShared/enums/currency';
 import { JobTrigger } from '@AthenaShared/interfaces/jobTrigger';
-import { isFlagEnabled } from '@AthenaShared/utility/flags';
 import { distance2d } from '@AthenaShared/utility/vector';
 import { deepCloneObject } from '@AthenaShared/utility/deepCopy';
-import { FUEL_CONFIG } from './config';
+import { FUELSTATION_CONFIG } from './config';
+
 import stations from './stations';
 
 const maximumFuel = 100;
@@ -83,17 +82,7 @@ export class FuelStationSystem {
             return;
         }
 
-        /*
-        if (!isFlagEnabled(vehicleData.fuel, Vehicle_Behavior.CONSUMES_FUEL)) {
-            Athena.player.emit.notification(player, LOCALE_FUEL_STATIONS.FUEL_ALREADY_FULL);
-            return;
-        }*/
         const vehicleData = Athena.document.vehicle.get(closestVehicle);
-
-        /*if (!isFlagEnabled(closestVehicle.behavior, Vehicle_Behavior.CONSUMES_FUEL)) {
-            Athena.player.emit.notification(player, LOCALE_FUEL_STATIONS.FUEL_ALREADY_FULL);
-            return;
-        }*/
 
         if (closestVehicle.engineOn) {
             Athena.player.emit.notification(player, LOCALE_FUEL_STATIONS.FUEL_TURN_OFF_ENGINE);
@@ -123,12 +112,12 @@ export class FuelStationSystem {
 
         const currentFuel = vehicleData.fuel;
         let missingFuel = maximumFuel - currentFuel;
-        let maximumCost = missingFuel * FUEL_CONFIG.FUEL_PRICE;
-        // re-calculate based on what the player can afford.
+        let maximumCost = missingFuel * FUELSTATION_CONFIG.FUEL_PRICE;
+
         const PlayerData = Athena.document.character.get(player);
         if (PlayerData.cash < maximumCost) {
-            maximumCost = FUEL_CONFIG.FUEL_PRICE * PlayerData.cash;
-            missingFuel = missingFuel - FUEL_CONFIG.FUEL_PRICE * PlayerData.cash;
+            maximumCost = FUELSTATION_CONFIG.FUEL_PRICE * PlayerData.cash;
+            missingFuel = missingFuel - FUELSTATION_CONFIG.FUEL_PRICE * PlayerData.cash;
             if (missingFuel <= 2) {
                 Athena.player.emit.notification(player, `${LOCALE_FUEL_STATIONS.FUEL_CANNOT_AFFORD} $${maximumCost}`);
                 return;
@@ -142,38 +131,28 @@ export class FuelStationSystem {
             acceptCallback: FuelStationSystem.start,
             cancelCallback: FuelStationSystem.cancel,
             image: '../../assets/images/refuel.jpg',
-            summary: `How much % of fuel do you want to refill in the ${vehicleData.model}, if it costs $${FUEL_CONFIG.FUEL_PRICE} each?`,
+            summary: `How much % of fuel do you want to refill in the ${vehicleData.model}, if it costs $${FUELSTATION_CONFIG.FUEL_PRICE} each?`,
             maxAmount: missingFuel,
         };
 
         fuelInfo[player.id] = {
-            cost: FUEL_CONFIG.FUEL_PRICE,
+            cost: FUELSTATION_CONFIG.FUEL_PRICE,
             fuel: missingFuel,
             vehicle: closestVehicle,
-            timeout: Date.now() + FUEL_CONFIG.FUEL_RESET_TIMEOUT,
+            timeout: Date.now() + FUELSTATION_CONFIG.FUEL_RESET_TIMEOUT,
         };
 
-        if (!player || !player.valid) {
+        if (!player?.valid) {
             return;
         }
 
-        //const data = deepCloneObject<LastStoredData>(lastStoredData);
-        //alt.log('Emit VIEW_EVENTS_FUEL_TRIGGER.OPEN to client ' + PlayerData.name);
-        //alt.emitClient(player, VIEW_EVENTS_FUEL_TRIGGER.OPEN, Athena.utility.deepCloneObject(trigger));
-        //alt.emitClient(player, "OPEN", Athena.utility.deepCloneObject(trigger));
-
         LastTriggers[player.id] = trigger;
         alt.log('Emit VIEW_EVENTS_FUEL_TRIGGER.OPEN to client ' + PlayerData.name);
-        //alt.emitClient(player, 'VIEW_EVENTS_FUEL_TRIGGER.OPEN', deepCloneObject(trigger));
         alt.emitClient(player, VIEW_EVENTS_FUEL_TRIGGER.OPEN, deepCloneObject(trigger));
     }
 
-    /**
-     * Start the fuel process for the given player.
-     * @param {alt.Player} player - alt.Player - The player who started the refueling.
-     */
     static start(player: alt.Player, fuelAmount: number) {
-        if (!player || !player.valid) {
+        if (!player?.valid) {
             return;
         }
 
@@ -205,7 +184,7 @@ export class FuelStationSystem {
             return;
         }
 
-        let totalRefuelingTime = fuelAmount * FUEL_CONFIG.FUEL_TIME;
+        let totalRefuelingTime = fuelAmount * FUELSTATION_CONFIG.FUEL_TIME;
         data.vehicle.isRefueling = true;
         const PlayerData = Athena.document.character.get(player);
         Athena.player.emit.createProgressBar(player, {
@@ -230,38 +209,23 @@ export class FuelStationSystem {
             }
 
             const vehicleData = Athena.document.vehicle.get(data.vehicle);
-            if (data.vehicle && data.vehicle.valid) {
+            if (data.vehicle?.valid) {
                 data.vehicle.isRefueling = false;
                 vehicleData.fuel += fuelAmount;
-                //Athena.vehicle.funcs.save(data.vehicle, { fuel: vehicleData.fuel });
                 Athena.document.vehicle.set(data.vehicle, 'fuel', vehicleData.fuel);
             }
 
             delete fuelInfo[id];
         }, totalRefuelingTime);
     }
-
-    /**
-     * `cancel` is a function that takes a player as an argument and deletes the fuelInfo object for that player.
-     * @param {alt.Player} player - alt.Player - The player that is using the command.
-     * @returns None
-     */
     static cancel(player: alt.Player) {
         if (fuelInfo[player.id]) {
             delete fuelInfo[player.id];
         }
     }
 
-    /**
-     * Invoke a callback or event based on what is specified in the JobTrigger data.
-     *
-     * @static
-     * @param {alt.Player} player
-     * @param {number} amount
-     * @memberof InternalFunctions
-     */
     static acceptDialog(player: alt.Player, amount: number) {
-        if (!player || !player.valid) {
+        if (!player?.valid) {
             return;
         }
 
@@ -290,7 +254,7 @@ export class FuelStationSystem {
      * @memberof InternalFunctions
      */
     static cancelDialog(player: alt.Player) {
-        if (!player || !player.valid) {
+        if (!player?.valid) {
             return;
         }
 
