@@ -5,6 +5,7 @@ import { VEHICLE_STATE } from '../../shared/vehicle';
 import { distance2d } from '@AthenaShared/utility/vector';
 import { FUEL_CONFIG } from './config';
 import { ATHENA_EVENTS_VEHICLE } from '@AthenaPlugins/plugin-fuel-stations/shared/events';
+import { toggleEngine } from '@AthenaServer/vehicle/controls';
 
 export class FuelSystem {
     static init() {
@@ -119,3 +120,12 @@ export class FuelSystem {
 }
 
 alt.on('playerEnteredVehicle', FuelSystem.enterVehicle);
+
+Athena.vehicle.events.on('engine-started', (veh: alt.Vehicle, player: alt.Player) => {
+    const vehData = Athena.document.vehicle.get(veh);
+
+    if (vehData.fuel <= 0) {
+        toggleEngine(veh);
+        Athena.player.emit.message(player, `Fuel is empty.`);
+    }
+});
