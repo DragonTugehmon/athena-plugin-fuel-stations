@@ -123,8 +123,7 @@ alt.on('playerEnteredVehicle', FuelSystem.enterVehicle);
 
 Athena.vehicle.events.on('engine-started', (veh: alt.Vehicle, player: alt.Player) => {
     const vehData = Athena.document.vehicle.get(veh);
-
-    if (vehData.fuel <= 0) {
+    if (vehData && vehData.fuel <= 0) {
         toggleEngine(veh);
         Athena.player.emit.message(player, `Fuel is empty.`);
     }
