@@ -1,1 +1,1 @@
-import './src/fuel';
+import './src/fuel.js';

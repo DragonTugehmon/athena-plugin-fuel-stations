@@ -1,11 +1,11 @@
 import * as alt from 'alt-server';
-import * as Athena from '@AthenaServer/api';
+import * as Athena from '@AthenaServer/api/index.js';
 
-import { VEHICLE_STATE } from '../../shared/vehicle';
-import { distance2d } from '@AthenaShared/utility/vector';
-import { FUEL_CONFIG } from './config';
-import { ATHENA_EVENTS_VEHICLE } from '@AthenaPlugins/plugin-fuel-stations/shared/events';
-import { toggleEngine } from '@AthenaServer/vehicle/controls';
+import { VEHICLE_STATE } from '../../shared/vehicle.js';
+import { distance2d } from '@AthenaShared/utility/vector.js';
+import { FUEL_CONFIG } from './config.js';
+import { ATHENA_EVENTS_VEHICLE } from '@AthenaPlugins/plugin-fuel-stations/shared/events.js';
+import { toggleEngine } from '@AthenaServer/vehicle/controls.js';
 
 export class FuelSystem {
     static init() {
