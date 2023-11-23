@@ -1,9 +1,9 @@
 import * as alt from 'alt-server';
-import * as Athena from '@AthenaServer/api';
+import * as Athena from '@AthenaServer/api/index.js';
 
-import { Vehicle_Behavior, VEHICLE_STATE } from '../../shared/vehicle';
-import { isFlagEnabled } from '@AthenaShared/utility/flags';
-import { FUEL_CONFIG } from './config';
+import { Vehicle_Behavior, VEHICLE_STATE } from '../../shared/vehicle.js';
+import { isFlagEnabled } from '@AthenaShared/utility/flags.js';
+import { FUEL_CONFIG } from './config.js';
 
 function setFuel(player: alt.Player, amount: string) {
     let actualAmount = parseInt(amount);
